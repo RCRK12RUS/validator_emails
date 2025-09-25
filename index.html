@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Валидатор Email Адресов</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 1000px;
+            padding: 30px;
+            margin: 20px auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2575fc;
+            font-weight: 600;
+        }
+        
+        .description {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        .file-input-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .file-input-label {
+            background-color: #2575fc;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+            transition: background-color 0.3s;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+        
+        .file-input-label:hover {
+            background-color: #1a68e3;
+        }
+        
+        #file-input {
+            display: none;
+        }
+        
+        .textarea-container {
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            resize: vertical;
+            font-size: 14px;
+        }
+        
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 16px;
+            min-width: 180px;
+        }
+        
+        #validate-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        #validate-btn:hover {
+            background-color: #45a049;
+        }
+        
+        #stop-btn {
+            background-color: #f44336;
+            color: white;
+            display: none;
+        }
+        
+        #stop-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        #save-txt-btn, #save-xlsx-btn {
+            background-color: #ff9800;
+            color: white;
+            display: none;
+        }
+        
+        #save-txt-btn:hover, #save-xlsx-btn:hover {
+            background-color: #e68900;
+        }
+        
+        .results-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            flex-wrap: wrap;
+        }
+        
+        .results-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #2575fc;
+            color: #2575fc;
+            font-weight: 500;
+        }
+        
+        .tab-content {
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .email-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .email-item:last-child {
+            border-bottom: none;
+        }
+        
+        .valid {
+            color: #4CAF50;
+        }
+        
+        .invalid {
+            color: #f44336;
+        }
+        
+        .status {
+            font-weight: 500;
+        }
+        
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .progress-text {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            .results-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Валидатор Email Адресов</h1>
+        <p class="description">Загрузите файл со списком email адресов или вставьте их в текстовое поле для проверки валидности.</p>
+        
+        <div class="input-section">
+            <div class="file-input-container">
+                <label for="file-input" class="file-input-label">Выбрать список</label>
+                <input type="file" id="file-input" accept=".txt,.csv">
+                <span id="file-name">Файл не выбран</span>
+            </div>
+            
+            <div class="textarea-container">
+                <textarea id="email-input" placeholder="Введите email адреса для проверки (каждый с новой строки)"></textarea>
+            </div>
+            
+            <div class="buttons">
+                <button id="validate-btn">Проверить Email адреса</button>
+                <button id="stop-btn">Остановить проверку</button>
+                <button id="save-txt-btn">Сохранить в TXT</button>
+                <button id="save-xlsx-btn">Сохранить в XLSX</button>
+            </div>
+            
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress" id="progress-bar"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+        </div>
+        
+        <div class="results-section" id="results-section">
+            <div class="results-header">
+                <h2>Результаты проверки</h2>
+                <div id="results-summary"></div>
+            </div>
+            
+            <div class="results-tabs">
+                <div class="tab active" data-tab="all">Все адреса</div>
+                <div class="tab" data-tab="valid">Валидные</div>
+                <div class="tab" data-tab="invalid">Невалидные</div>
+            </div>
+            
+            <div class="tab-content active" id="tab-all">
+                <div id="results-content"></div>
+            </div>
+            
+            <div class="tab-content" id="tab-valid">
+                <div id="valid-results-content"></div>
+            </div>
+            
+            <div class="tab-content" id="tab-invalid">
+                <div id="invalid-results-content"></div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>Инструкция по использованию:</h3>
+            <ul>
+                <li>Нажмите кнопку "Выбрать список" для загрузки текстового файла с email адресами (по одному на строку)</li>
+                <li>Или вставьте список email адресов в текстовое поле (каждый с новой строки)</li>
+                <li>Нажмите кнопку "Проверить Email адреса" для начала проверки</li>
+                <li>Используйте кнопку "Остановить проверку" для прерывания процесса</li>
+                <li>После завершения проверки появятся кнопки для сохранения результатов в TXT или XLSX формате</li>
+                <li>Переключайтесь между вкладками для просмотра всех, валидных или невалидных адресов</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('file-input');
+            const fileName = document.getElementById('file-name');
+            const emailInput = document.getElementById('email-input');
+            const validateBtn = document.getElementById('validate-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const saveTxtBtn = document.getElementById('save-txt-btn');
+            const saveXlsxBtn = document.getElementById('save-xlsx-btn');
+            const resultsSection = document.getElementById('results-section');
+            const resultsContent = document.getElementById('results-content');
+            const validResultsContent = document.getElementById('valid-results-content');
+            const invalidResultsContent = document.getElementById('invalid-results-content');
+            const resultsSummary = document.getElementById('results-summary');
+            const progressContainer = document.getElementById('progress-container');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            let validEmails = [];
+            let invalidEmails = [];
+            let allEmails = [];
+            let isValidationRunning = false;
+            let currentTimeout = null;
+            
+            // Обработчик выбора файла
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    fileName.textContent = file.name;
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        emailInput.value = e.target.result;
+                    };
+                    reader.readAsText(file);
+                } else {
+                    fileName.textContent = 'Файл не выбран';
+                }
+            });
+            
+            // Функция валидации email
+            function validateEmail(email) {
+                // Более строгое регулярное выражение для проверки email
+                const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+                return emailRegex.test(email) && email.length <= 254;
+            }
+            
+            // Обработчик нажатия кнопки проверки
+            validateBtn.addEventListener('click', function() {
+                const emailsText = emailInput.value.trim();
+                
+                if (!emailsText) {
+                    alert('Пожалуйста, введите email адреса для проверки или выберите файл.');
+                    return;
+                }
+                
+                // Разделяем текст на массив email адресов
+                allEmails = emailsText.split('\n')
+                    .map(email => email.trim())
+                    .filter(email => email.length > 0);
+                
+                if (allEmails.length === 0) {
+                    alert('Не найдено email адресов для проверки.');
+                    return;
+                }
+                
+                // Сбрасываем предыдущие результаты
+                validEmails = [];
+                invalidEmails = [];
+                resultsContent.innerHTML = '';
+                validResultsContent.innerHTML = '';
+                invalidResultsContent.innerHTML = '';
+                resultsSection.style.display = 'none';
+                saveTxtBtn.style.display = 'none';
+                saveXlsxBtn.style.display = 'none';
+                
+                // Показываем прогресс и кнопку остановки
+                progressContainer.style.display = 'block';
+                stopBtn.style.display = 'inline-block';
+                validateBtn.disabled = true;
+                progressBar.style.width = '0%';
+                progressText.textContent = '0%';
+                
+                // Запускаем проверку
+                isValidationRunning = true;
+                let processed = 0;
+                const total = allEmails.length;
+                
+                function processNextEmail() {
+                    if (!isValidationRunning || processed >= total) {
+                        // Завершаем проверку
+                        finishValidation();
+                        return;
+                    }
+                    
+                    const email = allEmails[processed];
+                    const isValid = validateEmail(email);
+                    
+                    if (isValid) {
+                        validEmails.push(email);
+                    } else {
+                        invalidEmails.push(email);
+                    }
+                    
+                    // Добавляем результат в соответствующие списки
+                    addEmailToResults(email, isValid, processed);
+                    
+                    // Обновляем прогресс
+                    processed++;
+                    const progress = Math.round((processed / total) * 100);
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `${progress}% (${processed}/${total})`;
+                    
+                    // Планируем обработку следующего email
+                    if (processed < total) {
+                        currentTimeout = setTimeout(processNextEmail, 10);
+                    } else {
+                        finishValidation();
+                    }
+                }
+                
+                // Начинаем обработку
+                processNextEmail();
+            });
+            
+            // Функция добавления email в результаты
+            function addEmailToResults(email, isValid, index) {
+                const emailItem = document.createElement('div');
+                emailItem.className = 'email-item';
+                emailItem.innerHTML = `
+                    <span>${index + 1}. ${email}</span>
+                    <span class="status ${isValid ? 'valid' : 'invalid'}">${isValid ? '✓ Валидный' : '✗ Невалидный'}</span>
+                `;
+                
+                resultsContent.appendChild(emailItem.cloneNode(true));
+                
+                if (isValid) {
+                    validResultsContent.appendChild(emailItem.cloneNode(true));
+                } else {
+                    invalidResultsContent.appendChild(emailItem);
+                }
+            }
+            
+            // Функция завершения проверки
+            function finishValidation() {
+                isValidationRunning = false;
+                validateBtn.disabled = false;
+                stopBtn.style.display = 'none';
+                
+                // Показываем результаты
+                resultsSection.style.display = 'block';
+                resultsSummary.textContent = `Валидных: ${validEmails.length} из ${allEmails.length}`;
+                
+                // Показываем кнопки сохранения, если есть результаты
+                if (validEmails.length > 0 || invalidEmails.length > 0) {
+                    saveTxtBtn.style.display = 'inline-block';
+                    saveXlsxBtn.style.display = 'inline-block';
+                }
+                
+                // Скрываем прогресс через короткую задержку
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                }, 1000);
+            }
+            
+            // Обработчик нажатия кнопки остановки
+            stopBtn.addEventListener('click', function() {
+                isValidationRunning = false;
+                if (currentTimeout) {
+                    clearTimeout(currentTimeout);
+                }
+                finishValidation();
+                alert('Проверка прервана пользователем.');
+            });
+            
+            // Обработчик нажатия кнопки сохранения в TXT
+            saveTxtBtn.addEventListener('click', function() {
+                if (validEmails.length === 0 && invalidEmails.length === 0) {
+                    alert('Нет данных для сохранения.');
+                    return;
+                }
+                
+                // Создаем содержимое файла
+                let content = 'РЕЗУЛЬТАТЫ ПРОВЕРКИ EMAIL АДРЕСОВ\n\n';
+                content += `Всего проверено: ${allEmails.length}\n`;
+                content += `Валидных: ${validEmails.length}\n`;
+                content += `Невалидных: ${invalidEmails.length}\n\n`;
+                
+                content += 'ВАЛИДНЫЕ АДРЕСА:\n';
+                content += '================\n';
+                validEmails.forEach((email, index) => {
+                    content += `${index + 1}. ${email}\n`;
+                });
+                
+                content += '\nНЕВАЛИДНЫЕ АДРЕСА:\n';
+                content += '==================\n';
+                invalidEmails.forEach((email, index) => {
+                    content += `${index + 1}. ${email}\n`;
+                });
+                
+                // Создаем blob и ссылку для скачивания
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                // Создаем временную ссылку для скачивания
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'email_validation_results.txt';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Очищаем
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            });
+            
+            // Обработчик нажатия кнопки сохранения в XLSX
+            saveXlsxBtn.addEventListener('click', function() {
+                if (validEmails.length === 0 && invalidEmails.length === 0) {
+                    alert('Нет данных для сохранения.');
+                    return;
+                }
+                
+                // Создаем книгу Excel
+                const wb = XLSX.utils.book_new();
+                
+                // Создаем лист с валидными адресами
+                const validData = validEmails.map((email, index) => ({
+                    '№': index + 1,
+                    'Email': email,
+                    'Статус': 'Валидный'
+                }));
+                
+                if (validData.length > 0) {
+                    const validWs = XLSX.utils.json_to_sheet(validData);
+                    XLSX.utils.book_append_sheet(wb, validWs, 'Валидные адреса');
+                }
+                
+                // Создаем лист с невалидными адресами
+                const invalidData = invalidEmails.map((email, index) => ({
+                    '№': index + 1,
+                    'Email': email,
+                    'Статус': 'Невалидный'
+                }));
+                
+                if (invalidData.length > 0) {
+                    const invalidWs = XLSX.utils.json_to_sheet(invalidData);
+                    XLSX.utils.book_append_sheet(wb, invalidWs, 'Невалидные адреса');
+                }
+                
+                // Создаем лист с общей статистикой
+                const summaryData = [
+                    {'Параметр': 'Всего проверено', 'Значение': allEmails.length},
+                    {'Параметр': 'Валидных адресов', 'Значение': validEmails.length},
+                    {'Параметр': 'Невалидных адресов', 'Значение': invalidEmails.length},
+                    {'Параметр': 'Процент валидных', 'Значение': `${((validEmails.length / allEmails.length) * 100).toFixed(2)}%`}
+                ];
+                
+                const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, summaryWs, 'Статистика');
+                
+                // Сохраняем файл
+                XLSX.writeFile(wb, 'email_validation_results.xlsx');
+            });
+            
+            // Обработчики переключения вкладок
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Убираем активный класс у всех вкладок и контента
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    
+                    // Добавляем активный класс текущей вкладке и контенту
+                    this.classList.add('active');
+                    document.getElementById(`tab-${tabId}`).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
